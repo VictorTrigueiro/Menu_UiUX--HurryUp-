@@ -17,6 +17,9 @@ public class Player2Controller : MonoBehaviour
     private Rigidbody rb;
     private bool isGrounded;
     private bool canDash = true;
+    private bool isDashing;
+
+    private Vector3 moveDirection;
 
     private void Start()
     {
@@ -27,7 +30,8 @@ public class Player2Controller : MonoBehaviour
     {
         Move();
 
-        if (Input.GetKeyDown(KeyCode.KeypadEnter) && isGrounded)
+        if ((Input.GetKeyDown(KeyCode.Return) ||
+             Input.GetKeyDown(KeyCode.KeypadEnter)) && isGrounded)
         {
             Jump();
         }
@@ -55,12 +59,15 @@ public class Player2Controller : MonoBehaviour
         if (Input.GetKey(KeyCode.DownArrow))
             v = -1;
 
-        Vector3 direction = new Vector3(h, 0, v).normalized;
+        moveDirection = new Vector3(h, 0, v).normalized;
 
-        Vector3 velocity = direction * moveSpeed;
-        velocity.y = rb.linearVelocity.y;
+        if (!isDashing)
+        {
+            Vector3 velocity = moveDirection * moveSpeed;
+            velocity.y = rb.linearVelocity.y;
 
-        rb.linearVelocity = velocity;
+            rb.linearVelocity = velocity;
+        }
     }
 
     void Jump()
@@ -70,11 +77,21 @@ public class Player2Controller : MonoBehaviour
 
     IEnumerator Dash()
     {
+        if (moveDirection == Vector3.zero)
+            yield break;
+
         canDash = false;
+        isDashing = true;
 
-        Vector3 direction = transform.forward;
+        rb.linearVelocity = new Vector3(
+            moveDirection.x * dashForce,
+            rb.linearVelocity.y,
+            moveDirection.z * dashForce
+        );
 
-        rb.AddForce(direction * dashForce, ForceMode.Impulse);
+        yield return new WaitForSeconds(dashDuration);
+
+        isDashing = false;
 
         yield return new WaitForSeconds(dashCooldown);
 

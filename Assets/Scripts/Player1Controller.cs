@@ -3,6 +3,9 @@ using System.Collections;
 
 public class Player1Controller : MonoBehaviour
 {
+    private Vector3 moveDirection;
+    private bool isDashing;
+
     [Header("Movimento")]
     public float moveSpeed = 5f;
 
@@ -53,14 +56,17 @@ public class Player1Controller : MonoBehaviour
             v = 1;
 
         if (Input.GetKey(KeyCode.S))
-        v = -1;
+            v = -1;
 
-        Vector3 direction = new Vector3(h, 0, v).normalized;
+        moveDirection = new Vector3(h, 0, v).normalized;
 
-        Vector3 velocity = direction * moveSpeed;
-        velocity.y = rb.velocity.y;
+        if (!isDashing)
+        {
+            Vector3 velocity = moveDirection * moveSpeed;
+            velocity.y = rb.linearVelocity.y;
 
-        rb.velocity = velocity;
+            rb.linearVelocity = velocity;
+        }
     }
 
     void Jump()
@@ -70,11 +76,21 @@ public class Player1Controller : MonoBehaviour
 
     IEnumerator Dash()
     {
+        if (moveDirection == Vector3.zero)
+            yield break;
+
         canDash = false;
+        isDashing = true;
 
-        Vector3 direction = transform.forward;
+        rb.linearVelocity = new Vector3(
+            moveDirection.x * dashForce,
+            rb.linearVelocity.y,
+            moveDirection.z * dashForce
+        );
 
-        rb.AddForce(direction * dashForce, ForceMode.Impulse);
+        yield return new WaitForSeconds(dashDuration);
+
+        isDashing = false;
 
         yield return new WaitForSeconds(dashCooldown);
 
